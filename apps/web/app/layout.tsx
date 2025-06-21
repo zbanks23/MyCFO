@@ -26,7 +26,7 @@ export default function RootLayout({
               <UserButton />
             </SignedIn>
           </header>
-          <div className="bg-gray-900">{children}</div>
+          <div className="bg-gray-950">{children}</div>
         </body>
       </html>
     </ClerkProvider>
