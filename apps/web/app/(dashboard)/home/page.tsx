@@ -6,6 +6,7 @@ import { useUser } from "@clerk/nextjs";
 function page() {
   const { user } = useUser();
   const [apiMessage, setApiMessage] = useState("");
+  const [syncStatus, setSyncStatus] = useState("");
 
   useEffect(() => {
     const getApiStatus = async () => {
@@ -25,6 +26,31 @@ function page() {
     getApiStatus();
   }, []);
 
+  const handleSyncUser = async () => {
+    if (!user) return;
+
+    console.log("Data being sent to backend:", user);
+    setSyncStatus("Syncing...");
+    try {
+      const response = await fetch("http://localhost:5001/api/sync_user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(user),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to sync user");
+      }
+      setSyncStatus(`Sync successful: ${data.message}`);
+    } catch (error: any) {
+      console.error("Sync failed:", error);
+      setSyncStatus(`Sync failed: ${error.message}`);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -32,6 +58,17 @@ function page() {
       <div>
         <p>Welcome to your dashboard, {user.firstName}!</p>
         <p>API Status: {apiMessage}</p>
+      </div>
+      <div className="mt-8">
+        <button
+          onClick={handleSyncUser}
+          className="px-4 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600"
+        >
+          Sync My User Data to DB
+        </button>
+        <p className="mt-2 text-sm text-gray-600">
+          Status: <span className="font-medium">{syncStatus}</span>
+        </p>
       </div>
       <div>Total Balance: $100,000</div>
       <div className="grid grid-cols-3 grid-rows-2 h-full w-full text-center">
