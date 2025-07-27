@@ -3,6 +3,11 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import plaid
+from plaid.api import plaid_api
+from plaid.model.products import Products
+from plaid.model.country_code import CountryCode
+
 
 load_dotenv()
 
@@ -12,6 +17,16 @@ CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
+
+plaid_config = plaid.Configuration(
+    host=plaid.Environment.Sandbox,
+    api_key={
+        'ClientId': os.environ.get("PLAID_CLIENT_ID"),
+        'secret': os.environ.get("PLAID_SCRET")
+    }
+)
+plaid_api_client = plaid.ApiClient(plaid_config)
+plaid_client = plaid_api.PlaidApi(plaid_api_client)
 
 @app.route('/api/status')
 def status():
@@ -64,7 +79,6 @@ def sync_user():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5001, debug=True)
