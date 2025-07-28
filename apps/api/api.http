@@ -1,0 +1,12 @@
+@clerkId = user_2yThMKquMcqYVnPMSgomD3ihgTv
+
+@apiHost = http://127.0.0.1:5001
+
+###
+
+POST {{apiHost}}/api/plaid/create_link_token
+Content-Type: application/json
+
+{
+    "clerk_id": "{{clerkId}}"
+}

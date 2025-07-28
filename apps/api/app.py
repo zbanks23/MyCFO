@@ -5,9 +5,10 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 import plaid
 from plaid.api import plaid_api
+from plaid.model.link_token_create_request import LinkTokenCreateRequest
+from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
-
 
 load_dotenv()
 
@@ -17,16 +18,6 @@ CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
-
-plaid_config = plaid.Configuration(
-    host=plaid.Environment.Sandbox,
-    api_key={
-        'ClientId': os.environ.get("PLAID_CLIENT_ID"),
-        'secret': os.environ.get("PLAID_SCRET")
-    }
-)
-plaid_api_client = plaid.ApiClient(plaid_config)
-plaid_client = plaid_api.PlaidApi(plaid_api_client)
 
 @app.route('/api/status')
 def status():
@@ -79,6 +70,47 @@ def sync_user():
         
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+plaid_client_id = os.environ.get("PLAID_CLIENT_ID")
+plaid_secret = os.environ.get("PLAID_SECRET")
+
+plaid_config = plaid.Configuration(
+    host=plaid.Environment.Sandbox,
+    api_key={
+        'clientId': plaid_client_id,
+        'secret': plaid_secret
+    }
+)
+plaid_client = plaid_api.PlaidApi(plaid.ApiClient(plaid_config))
+
+@app.route('/api/plaid/create_link_token', methods=['POST'])
+def create_link_token():
+    try:
+        clerk_id = request.json.get('clerk_id')
+        if not clerk_id:
+            return jsonify({'error': 'Clerk ID is required'}), 400
+        
+        user_query = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute()
+        if not user_query.data:
+            return jsonify({'error': 'User not found'}), 404
+        internal_user_id = user_query.data[0]['id']
+
+        plaid_request = LinkTokenCreateRequest(
+            client_id = plaid_client_id,
+            secret = plaid_secret,
+            user=LinkTokenCreateRequestUser(client_user_id=str(internal_user_id)),
+            client_name="My Finance Tracker",
+            products=[Products('transactions')], # We want transaction data
+            country_codes=[CountryCode('US')],
+            language='en'
+        )
+        response = plaid_client.link_token_create(plaid_request)
+        return jsonify(response.to_dict())
+
+    except plaid.ApiException as e:
+        return jsonify({'error': f"Plaid API Error: {e.body}"}), 500
+    except Exception as e:
+        return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5001, debug=True)
