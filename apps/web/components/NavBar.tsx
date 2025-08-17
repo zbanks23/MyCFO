@@ -11,8 +11,8 @@ const NavBar = () => {
         <Link href={"/home"} className="flex-1 text-center">
           Home
         </Link>
-        <Link href={"/spending"} className="flex-1 text-center">
-          Spending
+        <Link href={"/transactions"} className="flex-1 text-center">
+          Transactions
         </Link>
         <Link href={"/profile"} className="flex-1 text-center">
           Profile
