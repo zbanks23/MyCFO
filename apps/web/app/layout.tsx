@@ -21,11 +21,6 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en">
         <body className={inter.className}>
-          <header>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
-          </header>
           <div className="bg-gray-950">{children}</div>
         </body>
       </html>
