@@ -1,4 +1,4 @@
-"use client"; // This page is interactive, so it must be a Client Component
+"use client";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@clerk/nextjs";
