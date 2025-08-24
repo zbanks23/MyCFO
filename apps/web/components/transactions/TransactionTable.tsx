@@ -40,9 +40,9 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
   };
 
   return (
-    <div className="border rounded-lg">
-      <table className="w-full text-left">
-        <thead className="bg-gray-50 dark:bg-gray-800">
+    <>
+      <table className="border rounded-lg w-full text-left">
+        <thead className="bg-gray-800">
           <tr>
             <th className="p-4">Date</th>
             <th className="p-4">Name</th>
@@ -59,7 +59,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
               <td className="p-4">{tx.category}</td>
               <td className="p-4 text-right">${tx.amount.toFixed(2)}</td>
               <td className="p-4 flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => onEdit(tx)}>
+                <Button variant="default" size="sm" onClick={() => onEdit(tx)}>
                   Edit
                 </Button>
                 <Button
@@ -74,7 +74,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
           ))}
         </tbody>
       </table>
-    </div>
+    </>
   );
 };
 
