@@ -5,6 +5,9 @@ const NavBar = () => {
   return (
     <>
       <nav className="w-2/3 flex flex-row items-center h-10">
+        <Link href={"/goals"} className="flex-1 text-center">
+          Goals
+        </Link>
         <Link href={"/budget"} className="flex-1 text-center">
           Budget
         </Link>
