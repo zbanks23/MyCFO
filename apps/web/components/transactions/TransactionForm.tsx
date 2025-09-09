@@ -113,6 +113,7 @@ export const TransactionForm = React.forwardRef<
           id="category"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
+          required
         />
       </div>
       <div className="flex justify-end">
