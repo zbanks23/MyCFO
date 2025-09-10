@@ -1,10 +1,12 @@
 import React from "react";
 import Link from "next/link";
+import { SignedIn, UserButton } from "@clerk/nextjs";
 
 const NavBar = () => {
   return (
-    <>
-      <nav className="w-2/3 flex flex-row items-center h-10">
+    <div className="flex">
+      <div className="w-1/5"></div>
+      <nav className="w-3/5 flex flex-row items-center h-10">
         <Link href={"/goals"} className="flex-1 text-center">
           Goals
         </Link>
@@ -17,11 +19,16 @@ const NavBar = () => {
         <Link href={"/transactions"} className="flex-1 text-center">
           Transactions
         </Link>
-        <Link href={"/profile"} className="flex-1 text-center">
-          Profile
+        <Link href={"/settings"} className="flex-1 text-center">
+          Settings
         </Link>
       </nav>
-    </>
+      <div className="w-1/5 flex items-center">
+        <SignedIn>
+          <UserButton />
+        </SignedIn>
+      </div>
+    </div>
   );
 };
 
