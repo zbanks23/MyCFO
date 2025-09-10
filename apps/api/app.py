@@ -72,14 +72,11 @@ def sync_user():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# IMPORTANT: This assumes you are passing the clerk_id from your frontend
-# and using it to look up your internal user UUID.
-
 # GET all transactions for a user
 @app.route('/api/transactions', methods=['GET'])
 def get_transactions():
     clerk_id = request.args.get('clerk_id') # Pass clerk_id as a query param
-    # 1. Find your internal user ID
+    # 1. Find internal user ID
     user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -197,10 +194,6 @@ def create_link_token():
 # Helper function
 def get_or_create_manual_account(user_db_id):
     """Finds the 'Manual' account for a user, or creates one if it doesn't exist."""
-    # Check if a manual account already exists for this user
-    # NOTE: Your accounts.id is TEXT, but the item_id is UUID. This is a bit tricky.
-    # We will use a placeholder UUID for the item_id for now.
-    # A better approach would be to create a 'manual' item in plaid_items table.
     
     # Let's create a manual item first.
     manual_item = supabase.table('plaid_items').select('id').eq('user_id', user_db_id).eq('is_manual', True).execute().data
@@ -209,8 +202,8 @@ def get_or_create_manual_account(user_db_id):
         item_insert = supabase.table('plaid_items').insert({
             'user_id': user_db_id,
             'plaid_item_id': f'manual_{user_db_id}',
-            'plaid_access_token': 'manual_access_token', # This is a placeholder
-            'is_manual': True # Add this boolean column to your plaid_items table!
+            'plaid_access_token': 'manual_access_token',
+            'is_manual': True
         }).execute().data[0]
         item_id = item_insert['id']
     else:

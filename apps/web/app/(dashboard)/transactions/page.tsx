@@ -81,7 +81,6 @@ export default function TransactionsPage() {
         onDelete={fetchTransactions} // Re-fetch data after a delete
       />
 
-      {/* This is the Modal/Dialog for the form */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
