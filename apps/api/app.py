@@ -10,6 +10,10 @@ from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
+from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.accounts_get_request import AccountsGetRequest
+from plaid.model.transactions_sync_request import TransactionsSyncRequest
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -226,5 +230,105 @@ def get_or_create_manual_account(user_db_id):
     else:
         return manual_account[0]['id']
 
+def sync_accounts(access_token: str, item_db_id: str, user_db_id: str):
+    """Fetches account details from Plaid and stores them in our DB."""
+    try:
+        request = AccountsGetRequest(access_token=access_token)
+        response = plaid_client.accounts_get(request)
+        accounts = response['accounts']
+
+        accounts_to_insert = []
+        for acc in accounts:
+            accounts_to_insert.append({
+                'id': acc['account_id'], # Using Plaid's ID as our PK
+                'item_id': item_db_id,
+                'user_id': user_db_id,
+                'name': acc['name'],
+                'mask': acc['mask'],
+                'type': acc['type'].value, # .value gets the string representation
+                'subtype': acc['subtype'].value
+            })
+
+        if accounts_to_insert:
+            supabase.table('accounts').insert(accounts_to_insert).execute()
+            print(f"Successfully inserted {len(accounts_to_insert)} accounts.")
+
+    except plaid.ApiException as e:
+        print(f"Error syncing accounts: {e.body}")
+
+def sync_transactions(access_token: str, user_db_id: str):
+    """Fetches transactions for an item and stores them in our DB."""
+    try:
+        request = TransactionsSyncRequest(access_token=access_token)
+        response = plaid_client.transactions_sync(request)
+        added_tx = response['added']
+        
+        # In a real app, you'd also handle `modified` and `removed` transactions
+        
+        tx_to_insert = []
+        for t in added_tx:
+            tx_to_insert.append({
+                'id': t['transaction_id'], # Using Plaid's ID as our PK
+                'account_id': t['account_id'],
+                'user_id': user_db_id,
+                'date': t['date'].isoformat(),
+                'name': t['name'],
+                'amount': t['amount'],
+                'category': t['category'][0] if t['category'] else 'Other',
+                'pending': t['pending']
+            })
+            
+        if tx_to_insert:
+            supabase.table('transactions').insert(tx_to_insert).execute()
+            print(f"Successfully inserted {len(tx_to_insert)} transactions.")
+
+    except plaid.ApiException as e:
+        print(f"Error syncing transactions: {e.body}")
+
+@app.route('/api/plaid/exchange_public_token', methods=['POST'])
+def exchange_public_token():
+    data = request.json
+    public_token = data.get('public_token')
+    clerk_id = data.get('clerk_id')
+
+    if not public_token or not clerk_id:
+        return jsonify({'error': 'Public token and clerk_id are required'}), 400
+
+    # 1. Find our internal user
+    user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    user_db_id = user[0]['id']
+
+    try:
+        # 2. Exchange public_token for access_token and item_id
+        exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
+        exchange_response = plaid_client.item_public_token_exchange(exchange_request)
+        access_token = exchange_response['access_token']
+        item_id = exchange_response['item_id']
+
+        # 3. Store the new Plaid Item in our database
+        # TODO: Encrypt the access_token before storing it using Supabase Vault!
+        item_data = {
+            'user_id': user_db_id,
+            'plaid_item_id': item_id,
+            'plaid_access_token': access_token 
+        }
+        inserted_item = supabase.table('plaid_items').insert(item_data).execute().data[0]
+        item_db_id = inserted_item['id'] # Our internal UUID for the item
+        
+        # 4. Sync accounts and transactions for the new item
+        print("Item stored. Syncing accounts...")
+        sync_accounts(access_token, item_db_id, user_db_id)
+
+        print("Accounts synced. Syncing transactions...")
+        sync_transactions(access_token, user_db_id)
+
+        print("Sync complete.")
+        return jsonify({'status': 'success', 'message': 'Account linked and synced successfully'})
+
+    except plaid.ApiException as e:
+        return jsonify({'error': str(e.body)}), 500
+    
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5001, debug=True)
