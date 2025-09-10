@@ -7,7 +7,6 @@ import WidgetDashboard from "@/components/WidgetDashboard";
 
 function page() {
   const { user } = useUser();
-  const [apiMessage, setApiMessage] = useState("");
   const [syncStatus, setSyncStatus] = useState("");
 
   useEffect(() => {
@@ -18,10 +17,10 @@ function page() {
           throw new Error("Network response was not ok");
         }
         const data = await response.json();
-        setApiMessage(data.message);
+        console.log(data.message);
       } catch (error) {
         console.error("Failed to fetch API status:", error);
-        setApiMessage("Failed to connect to API");
+        console.log("Failed to connect to API");
       }
     };
 
@@ -59,7 +58,6 @@ function page() {
     <section className="flex flex-col w-full h-full items-center">
       <div>
         <p>Welcome to your dashboard, {user.firstName}!</p>
-        <p>API Status: {apiMessage}</p>
       </div>
       <div className="mt-8">
         <button
