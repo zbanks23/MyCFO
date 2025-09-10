@@ -40,9 +40,9 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
   };
 
   return (
-    <>
-      <table className="border rounded-lg w-full text-left">
-        <thead className="bg-gray-800">
+    <div className="w-full rounded-lg border relative max-h-[70vh] overflow-y-auto">
+      <table className="w-full text-left table-fixed">
+        <thead className="bg-gray-800 sticky top-0 z-10">
           <tr>
             <th className="p-4">Date</th>
             <th className="p-4">Name</th>
@@ -74,7 +74,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
           ))}
         </tbody>
       </table>
-    </>
+    </div>
   );
 };
 
