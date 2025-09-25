@@ -9,7 +9,7 @@ const PlaidLinkButton = () => {
   const [linkToken, setLinkToken] = useState<string | null>(null);
 
   // 1. Fetch the link_token from our server
-  // This is a one-time token that launches the Plaid Link modal.
+  // A one-time token that launches the Plaid Link modal.
   useEffect(() => {
     const createLinkToken = async () => {
       try {
@@ -44,9 +44,7 @@ const PlaidLinkButton = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ public_token, clerk_id: userId }),
       });
-      // You might want to trigger a refresh of the user's data here
-      // e.g., by calling a function passed in via props or using a state management library.
-      window.location.reload(); // Simple solution for now
+      window.location.reload();
     },
     [userId]
   );
@@ -55,8 +53,6 @@ const PlaidLinkButton = () => {
   const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess,
-    // onExit: (err, metadata) => console.log('Plaid link exited.', err, metadata),
-    // onEvent: (eventName, metadata) => console.log('Plaid event:', eventName, metadata),
   });
 
   return (

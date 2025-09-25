@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 interface TransactionTableProps {
   transactions: Transaction[];
   onEdit: (transaction: Transaction) => void;
-  onDelete: () => void; // A function to be called after deleting
+  onDelete: () => void;
 }
 
 const TransactionTable: React.FC<TransactionTableProps> = ({
@@ -33,7 +33,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
           method: "DELETE",
         }
       );
-      onDelete(); // Notify the parent component to re-fetch data
+      onDelete();
     } catch (error) {
       console.error("Failed to delete transaction:", error);
     }

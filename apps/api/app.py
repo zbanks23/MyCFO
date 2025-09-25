@@ -31,8 +31,7 @@ def status():
 @app.route("/api/test_db")
 def test_db_connection():
     try:
-        # This is the line that actually uses the connection.
-        # We are asking Supabase to select all records from the 'users' table, but limit it to 5 just to be safe.
+        # Try to ask Supabase to select all records from the 'users' table and limit it to 5 just to be safe.
         response = supabase.table('users').select("*").limit(5).execute()
         
         return jsonify({
@@ -76,17 +75,91 @@ def sync_user():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/plaid/create_link_token', methods=['POST'])
+def create_link_token():
+    try:
+        clerk_id = request.json.get('clerk_id')
+        if not clerk_id:
+            return jsonify({'error': 'Clerk ID is required'}), 400
+        
+        user_query = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute()
+        if not user_query.data:
+            return jsonify({'error': 'User not found'}), 404
+        internal_user_id = user_query.data[0]['id']
+
+        plaid_request = LinkTokenCreateRequest(
+            client_id = plaid_client_id,
+            secret = plaid_secret,
+            user=LinkTokenCreateRequestUser(client_user_id=str(internal_user_id)),
+            client_name="My Finance Tracker",
+            products=[Products('transactions')], # We want transaction data
+            country_codes=[CountryCode('US')],
+            language='en'
+        )
+        response = plaid_client.link_token_create(plaid_request)
+        return jsonify(response.to_dict())
+
+    except plaid.ApiException as e:
+        return jsonify({'error': f"Plaid API Error: {e.body}"}), 500
+    except Exception as e:
+        return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
+
+@app.route('/api/plaid/exchange_public_token', methods=['POST'])
+def exchange_public_token():
+    data = request.json
+    public_token = data.get('public_token')
+    clerk_id = data.get('clerk_id')
+
+    if not public_token or not clerk_id:
+        return jsonify({'error': 'Public token and clerk_id are required'}), 400
+
+    # Find internal user
+    user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    user_db_id = user[0]['id']
+
+    try:
+        # Exchange public_token for access_token and item_id
+        exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
+        exchange_response = plaid_client.item_public_token_exchange(exchange_request)
+        access_token = exchange_response['access_token']
+        item_id = exchange_response['item_id']
+
+        # Store the new Plaid Item in our database
+        # TODO: Encrypt the access_token before storing it using Supabase Vault!
+        item_data = {
+            'user_id': user_db_id,
+            'plaid_item_id': item_id,
+            'plaid_access_token': access_token 
+        }
+        inserted_item = supabase.table('plaid_items').insert(item_data).execute().data[0]
+        item_db_id = inserted_item['id'] # Our internal UUID for the item
+        
+        # Sync accounts and transactions for the new item
+        print("Item stored. Syncing accounts...")
+        sync_accounts(access_token, item_db_id, user_db_id)
+
+        print("Accounts synced. Syncing transactions...")
+        sync_transactions(access_token, user_db_id)
+
+        print("Sync complete.")
+        return jsonify({'status': 'success', 'message': 'Account linked and synced successfully'})
+
+    except plaid.ApiException as e:
+        return jsonify({'error': str(e.body)}), 500
+
 # GET all transactions for a user
 @app.route('/api/transactions', methods=['GET'])
 def get_transactions():
     clerk_id = request.args.get('clerk_id') # Pass clerk_id as a query param
-    # 1. Find internal user ID
+    # Find internal user ID
     user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
     if not user:
         return jsonify({"error": "User not found"}), 404
     user_db_id = user[0]['id']
     
-    # 2. Fetch transactions
+    # Fetch transactions
     transactions = supabase.table('transactions').select('*').eq('user_id', user_db_id).order('date', desc=True).execute().data
     return jsonify(transactions)
 
@@ -116,7 +189,7 @@ def create_transaction():
     inserted = supabase.table('transactions').insert(new_transaction).execute().data
     return jsonify(inserted[0]), 201
 
-# PUT (update) an existing transaction
+# Update an existing transaction
 @app.route('/api/transactions/<transaction_id>', methods=['PUT'])
 def update_transaction(transaction_id):
     data = request.json
@@ -147,7 +220,6 @@ def delete_transaction(transaction_id):
     if not user: return jsonify({"error": "User not found"}), 404
     user_db_id = user[0]['id']
     
-    # Delete the transaction, ensuring it belongs to the user
     deleted = supabase.table('transactions').delete().match({'id': transaction_id, 'user_id': user_db_id}).execute().data
 
     if not deleted:
@@ -166,40 +238,11 @@ plaid_config = plaid.Configuration(
 )
 plaid_client = plaid_api.PlaidApi(plaid.ApiClient(plaid_config))
 
-@app.route('/api/plaid/create_link_token', methods=['POST'])
-def create_link_token():
-    try:
-        clerk_id = request.json.get('clerk_id')
-        if not clerk_id:
-            return jsonify({'error': 'Clerk ID is required'}), 400
-        
-        user_query = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute()
-        if not user_query.data:
-            return jsonify({'error': 'User not found'}), 404
-        internal_user_id = user_query.data[0]['id']
-
-        plaid_request = LinkTokenCreateRequest(
-            client_id = plaid_client_id,
-            secret = plaid_secret,
-            user=LinkTokenCreateRequestUser(client_user_id=str(internal_user_id)),
-            client_name="My Finance Tracker",
-            products=[Products('transactions')], # We want transaction data
-            country_codes=[CountryCode('US')],
-            language='en'
-        )
-        response = plaid_client.link_token_create(plaid_request)
-        return jsonify(response.to_dict())
-
-    except plaid.ApiException as e:
-        return jsonify({'error': f"Plaid API Error: {e.body}"}), 500
-    except Exception as e:
-        return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
-
 # Helper function
 def get_or_create_manual_account(user_db_id):
     """Finds the 'Manual' account for a user, or creates one if it doesn't exist."""
     
-    # Let's create a manual item first.
+    # Create a manual item
     manual_item = supabase.table('plaid_items').select('id').eq('user_id', user_db_id).eq('is_manual', True).execute().data
     if not manual_item:
         # Create a manual Plaid Item entry for this user
@@ -213,7 +256,7 @@ def get_or_create_manual_account(user_db_id):
     else:
         item_id = manual_item[0]['id']
 
-    # Now find or create the manual account linked to this item
+    # Find or create the manual account linked to this item
     manual_account = supabase.table('accounts').select('id').eq('item_id', item_id).eq('name', 'Manual Transactions').execute().data
     if not manual_account:
         account_id = f'manual_acct_{user_db_id}'
@@ -263,8 +306,6 @@ def sync_transactions(access_token: str, user_db_id: str):
         response = plaid_client.transactions_sync(request)
         added_tx = response['added']
         
-        # In a real app, you'd also handle `modified` and `removed` transactions
-        
         tx_to_insert = []
         for t in added_tx:
             tx_to_insert.append({
@@ -284,51 +325,6 @@ def sync_transactions(access_token: str, user_db_id: str):
 
     except plaid.ApiException as e:
         print(f"Error syncing transactions: {e.body}")
-
-@app.route('/api/plaid/exchange_public_token', methods=['POST'])
-def exchange_public_token():
-    data = request.json
-    public_token = data.get('public_token')
-    clerk_id = data.get('clerk_id')
-
-    if not public_token or not clerk_id:
-        return jsonify({'error': 'Public token and clerk_id are required'}), 400
-
-    # 1. Find our internal user
-    user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-    user_db_id = user[0]['id']
-
-    try:
-        # 2. Exchange public_token for access_token and item_id
-        exchange_request = ItemPublicTokenExchangeRequest(public_token=public_token)
-        exchange_response = plaid_client.item_public_token_exchange(exchange_request)
-        access_token = exchange_response['access_token']
-        item_id = exchange_response['item_id']
-
-        # 3. Store the new Plaid Item in our database
-        # TODO: Encrypt the access_token before storing it using Supabase Vault!
-        item_data = {
-            'user_id': user_db_id,
-            'plaid_item_id': item_id,
-            'plaid_access_token': access_token 
-        }
-        inserted_item = supabase.table('plaid_items').insert(item_data).execute().data[0]
-        item_db_id = inserted_item['id'] # Our internal UUID for the item
-        
-        # 4. Sync accounts and transactions for the new item
-        print("Item stored. Syncing accounts...")
-        sync_accounts(access_token, item_db_id, user_db_id)
-
-        print("Accounts synced. Syncing transactions...")
-        sync_transactions(access_token, user_db_id)
-
-        print("Sync complete.")
-        return jsonify({'status': 'success', 'message': 'Account linked and synced successfully'})
-
-    except plaid.ApiException as e:
-        return jsonify({'error': str(e.body)}), 500
     
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5001, debug=True)
