@@ -1,8 +1,7 @@
 import os
 from flask import Flask, jsonify, request
-from flask_cors import CORS
-from supabase import create_client, Client
 from dotenv import load_dotenv
+
 import uuid
 import plaid
 from plaid.api import plaid_api
@@ -14,49 +13,29 @@ from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchan
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
-class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'a-very-secret-key-that-you-should-change')
-    
-    # Supabase Configuration
-    SUPABASE_URL = os.environ.get("SUPABASE_URL")
-    SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-    
-    # Plaid Configuration
-    PLAID_CLIENT_ID = os.environ.get("PLAID_CLIENT_ID")
-    PLAID_SECRET = os.environ.get("PLAID_SECRET")
-    PLAID_ENV = os.environ.get("PLAID_ENV", "sandbox") # e.g., 'sandbox', 'development', 'production'
+from .extensions import cors, supabase, plaid_client
+from .endpoints.core import core_bp
 
-def create_app(config_object=Config):
+def create_app():
     load_dotenv()
 
+    class Config:
+        SECRET_KEY = os.environ.get('SECRET_KEY', 'a-very-secret-key-that-you-should-change')
+        
+        # Supabase Configuration
+        SUPABASE_URL = os.environ.get("SUPABASE_URL")
+        SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+        
+        # Plaid Configuration
+        PLAID_CLIENT_ID = os.environ.get("PLAID_CLIENT_ID")
+        PLAID_SECRET = os.environ.get("PLAID_SECRET")
+        PLAID_ENV = os.environ.get("PLAID_ENV", "sandbox")
+
     app = Flask(__name__)
-    app.config.from_object(config_object)
-    CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+    app.config.from_object(Config)
 
-
-    url: str = os.environ.get("SUPABASE_URL")
-    key: str = os.environ.get("SUPABASE_KEY")
-    supabase: Client = create_client(url, key)
-
-    @app.route('/api/status')
-    def status():
-        return jsonify({"status": "healthy", "message": "API is running!"}), 200
-
-    @app.route("/api/test_db")
-    def test_db_connection():
-        try:
-            # Try to ask Supabase to select all records from the 'users' table and limit it to 5 just to be safe.
-            response = supabase.table('users').select("*").limit(5).execute()
-            
-            return jsonify({
-                "message": "Successfully connected to Supabase and queried the users table.",
-                "data": response.data # shows a list of users.
-            })
-        except Exception as e:
-            return jsonify({
-                "message": "Failed to connect to or query the database.",
-                "error": str(e)
-            }), 500
+    register_extensions(app)
+    register_blueprints(app)
 
     @app.route("/api/sync_user", methods=['POST'])
     def sync_user():
@@ -341,3 +320,28 @@ def create_app(config_object=Config):
             print(f"Error syncing transactions: {e.body}")
 
     return app
+
+def register_extensions(app: Flask):
+    cors.init_app(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+
+    supabase.init_app(app.config['SUPABASE_URL'], app.config['SUPABASE_KEY'])
+    plaid_client.init_app(
+        client_id=app.config['PLAID_CLIENT_ID'],
+        secret=app.config['PLAID_SECRET'],
+        environment=app.config['PLAID_ENV']
+    )
+
+def register_blueprints(app: Flask):
+    app.register_blueprint(core_bp)
+
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'a-very-secret-key-that-you-should-change')
+    
+    # Supabase Configuration
+    SUPABASE_URL = os.environ.get("SUPABASE_URL")
+    SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+    
+    # Plaid Configuration
+    PLAID_CLIENT_ID = os.environ.get("PLAID_CLIENT_ID")
+    PLAID_SECRET = os.environ.get("PLAID_SECRET")
+    PLAID_ENV = os.environ.get("PLAID_ENV", "sandbox")
