@@ -1,16 +1,6 @@
 import os
-from flask import Flask, jsonify, request
+from flask import Flask
 from dotenv import load_dotenv
-
-import plaid
-from plaid.api import plaid_api
-from plaid.model.link_token_create_request import LinkTokenCreateRequest
-from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
-from plaid.model.products import Products
-from plaid.model.country_code import CountryCode
-from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
-from plaid.model.accounts_get_request import AccountsGetRequest
-from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
 from .extensions import cors, supabase, plaid_client
 from .endpoints.core import core_bp
@@ -45,7 +35,7 @@ def register_extensions(app: Flask):
     cors.init_app(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
 
     supabase.init_app(app.config['SUPABASE_URL'], app.config['SUPABASE_KEY'])
-    
+
     plaid_client.init_app(
         client_id=app.config['PLAID_CLIENT_ID'],
         secret=app.config['PLAID_SECRET'],
