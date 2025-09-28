@@ -3,11 +3,11 @@ from ..extensions import supabase
 
 core_bp = Blueprint("core", __name__)
 
-@core_bp.route('/api/status')
+@core_bp.route('/status')
 def status():
     return jsonify({"status": "healthy", "message": "API is running!"}), 200
 
-@core_bp.route("/api/test_db")
+@core_bp.route("/test_db")
 def test_db_connection():
     try:
         # Try to ask Supabase to select all records from the 'users' table and limit it to 5 just to be safe.

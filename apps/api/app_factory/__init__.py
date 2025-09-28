@@ -15,6 +15,7 @@ from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
 from .extensions import cors, supabase, plaid_client
 from .endpoints.core import core_bp
+from .endpoints.users import users_bp
 
 def create_app():
     load_dotenv()
@@ -36,37 +37,6 @@ def create_app():
 
     register_extensions(app)
     register_blueprints(app)
-
-    @app.route("/api/sync_user", methods=['POST'])
-    def sync_user():
-        try:
-            clerk_user = request.get_json()
-            if not clerk_user or 'id' not in clerk_user:
-                return jsonify({"error": "Clerk user data is required"}), 400
-            
-            clerk_id = clerk_user['id']
-
-            existing_user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute()
-
-            if not existing_user.data:
-                user_to_insert = {
-                    'clerk_id': clerk_id,
-                    'email': clerk_user.get('emailAddresses', [{}])[0].get('emailAddress'),
-                    'first_name': clerk_user.get('firstName'),
-                    'last_name': clerk_user.get('lastName')
-                }
-
-                insert_response = supabase.table('users').insert(user_to_insert).execute()
-
-                if insert_response.data:
-                    return jsonify({"message": "User created successfully", "user": insert_response.data[0]}), 201
-                else:
-                    return jsonify({"error": "Failed to create user"}), 500
-            else:
-                return jsonify({"message": "User already exists", "user": existing_user.data[0]}), 200
-            
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
 
     @app.route('/api/plaid/create_link_token', methods=['POST'])
     def create_link_token():
@@ -332,16 +302,5 @@ def register_extensions(app: Flask):
     )
 
 def register_blueprints(app: Flask):
-    app.register_blueprint(core_bp)
-
-class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'a-very-secret-key-that-you-should-change')
-    
-    # Supabase Configuration
-    SUPABASE_URL = os.environ.get("SUPABASE_URL")
-    SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-    
-    # Plaid Configuration
-    PLAID_CLIENT_ID = os.environ.get("PLAID_CLIENT_ID")
-    PLAID_SECRET = os.environ.get("PLAID_SECRET")
-    PLAID_ENV = os.environ.get("PLAID_ENV", "sandbox")
+    app.register_blueprint(core_bp, url_prefix='/api')
+    app.register_blueprint(users_bp, url_prefix='/api')
