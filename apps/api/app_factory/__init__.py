@@ -2,7 +2,6 @@ import os
 from flask import Flask, jsonify, request
 from dotenv import load_dotenv
 
-import uuid
 import plaid
 from plaid.api import plaid_api
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
@@ -16,6 +15,7 @@ from plaid.model.transactions_sync_request import TransactionsSyncRequest
 from .extensions import cors, supabase, plaid_client
 from .endpoints.core import core_bp
 from .endpoints.users import users_bp
+from.endpoints.transactions import transactions_bp
 
 def create_app():
     load_dotenv()
@@ -111,83 +111,6 @@ def create_app():
 
         except plaid.ApiException as e:
             return jsonify({'error': str(e.body)}), 500
-
-    # GET all transactions for a user
-    @app.route('/api/transactions', methods=['GET'])
-    def get_transactions():
-        clerk_id = request.args.get('clerk_id') # Pass clerk_id as a query param
-        # Find internal user ID
-        user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-        user_db_id = user[0]['id']
-        
-        # Fetch transactions
-        transactions = supabase.table('transactions').select('*').eq('user_id', user_db_id).order('date', desc=True).execute().data
-        return jsonify(transactions)
-
-    # POST a new transaction
-    @app.route('/api/transactions', methods=['POST'])
-    def create_transaction():
-        data = request.json
-        clerk_id = data.get('clerk_id')
-        
-        user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
-        if not user: return jsonify({"error": "User not found"}), 404
-        user_db_id = user[0]['id']
-
-        # Get the ID of the user's manual account
-        manual_account_id = get_or_create_manual_account(user_db_id)
-
-        # Insert new transaction
-        new_transaction = {
-            "id": f"manual_txn_{uuid.uuid4()}", # Generate a unique ID
-            "account_id": manual_account_id,
-            "user_id": user_db_id,
-            "date": data.get('date'),
-            "name": data.get('name'),
-            "amount": data.get('amount'),
-            "category": data.get('category')
-        }
-        inserted = supabase.table('transactions').insert(new_transaction).execute().data
-        return jsonify(inserted[0]), 201
-
-    # Update an existing transaction
-    @app.route('/api/transactions/<transaction_id>', methods=['PUT'])
-    def update_transaction(transaction_id):
-        data = request.json
-        clerk_id = data.get('clerk_id') # Always verify ownership
-        
-        user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
-        if not user: return jsonify({"error": "User not found"}), 404
-        user_db_id = user[0]['id']
-
-        # Update the transaction, ensuring it belongs to the user
-        updated = supabase.table('transactions').update({
-            "date": data.get('date'),
-            "name": data.get('name'),
-            "amount": data.get('amount'),
-            "category": data.get('category')
-        }).match({'id': transaction_id, 'user_id': user_db_id}).execute().data
-        
-        if not updated:
-            return jsonify({"error": "Transaction not found or unauthorized"}), 404
-        return jsonify(updated[0])
-
-    # DELETE a transaction
-    @app.route('/api/transactions/<transaction_id>', methods=['DELETE'])
-    def delete_transaction(transaction_id):
-        clerk_id = request.args.get('clerk_id') # Get clerk_id from query params
-        
-        user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
-        if not user: return jsonify({"error": "User not found"}), 404
-        user_db_id = user[0]['id']
-        
-        deleted = supabase.table('transactions').delete().match({'id': transaction_id, 'user_id': user_db_id}).execute().data
-
-        if not deleted:
-            return jsonify({"error": "Transaction not found or unauthorized"}), 404
-        return jsonify({"message": "Transaction deleted successfully"}), 200
 
     plaid_client_id = os.environ.get("PLAID_CLIENT_ID")
     plaid_secret = os.environ.get("PLAID_SECRET")
@@ -304,3 +227,4 @@ def register_extensions(app: Flask):
 def register_blueprints(app: Flask):
     app.register_blueprint(core_bp, url_prefix='/api')
     app.register_blueprint(users_bp, url_prefix='/api')
+    app.register_blueprint(transactions_bp, url_prefix='/api')
