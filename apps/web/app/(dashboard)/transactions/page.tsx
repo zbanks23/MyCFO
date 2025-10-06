@@ -18,12 +18,13 @@ export interface Transaction {
 export default function TransactionsPage() {
   const { userId } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
   const fetchTransactions = useCallback(async () => {
     if (!userId) return;
     try {
       const response = await fetch(
-        `http://localhost:5001/api/transactions?clerk_id=${userId}`
+        `${apiUrl}/api/transactions?clerk_id=${userId}`
       );
       const data = await response.json();
       setTransactions(data);

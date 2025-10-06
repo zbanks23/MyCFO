@@ -13,6 +13,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
 }) => {
   const { userId } = useAuth();
   const [notes, setNotes] = useState<string>("");
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
   const handleEnter = async (
     event: React.KeyboardEvent<HTMLTextAreaElement>
@@ -30,7 +31,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
 
     try {
       const response = await fetch(
-        `http://localhost:5001/api/transactions/note/${event.currentTarget.id}`,
+        `${apiUrl}/api/transactions/note/${event.currentTarget.id}`,
         {
           method: "PUT",
           headers: {

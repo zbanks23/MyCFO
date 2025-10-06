@@ -8,11 +8,12 @@ import WidgetDashboard from "@/components/WidgetDashboard";
 function page() {
   const { user } = useUser();
   const [syncStatus, setSyncStatus] = useState("");
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
   useEffect(() => {
     const getApiStatus = async () => {
       try {
-        const response = await fetch("http://localhost:5001/api/status");
+        const response = await fetch(`${apiUrl}/api/status`);
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }
@@ -33,7 +34,7 @@ function page() {
     console.log("Data being sent to backend:", user);
     setSyncStatus("Syncing...");
     try {
-      const response = await fetch("http://localhost:5001/api/sync_user", {
+      const response = await fetch(`${apiUrl}/api/sync_user`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

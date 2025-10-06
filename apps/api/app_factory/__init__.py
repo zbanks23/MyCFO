@@ -32,7 +32,8 @@ def create_app():
     return app
 
 def register_extensions(app: Flask):
-    cors.init_app(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+    origin = os.environ.get("FRONT_END_URL", "http://localhost:3000")
+    cors.init_app(app, resources={r"/api/*": {"origins": origin}})
 
     supabase.init_app(app.config['SUPABASE_URL'], app.config['SUPABASE_KEY'])
 
