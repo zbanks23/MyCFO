@@ -5,7 +5,7 @@ import { usePlaidLink } from "react-plaid-link";
 import { useAuth } from "@clerk/nextjs";
 
 const PlaidLinkButton = () => {
-  const { userId } = useAuth(); // Clerk's user ID
+  const { userId } = useAuth();
   const [linkToken, setLinkToken] = useState<string | null>(null);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 

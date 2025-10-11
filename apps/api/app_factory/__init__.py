@@ -11,9 +11,7 @@ from .endpoints.plaid import plaid_bp
 def create_app():
     load_dotenv()
 
-    class Config:
-        SECRET_KEY = os.environ.get('SECRET_KEY', 'a-very-secret-key-that-you-should-change')
-        
+    class Config: 
         # Supabase Configuration
         SUPABASE_URL = os.environ.get("SUPABASE_URL")
         SUPABASE_KEY = os.environ.get("SUPABASE_KEY")

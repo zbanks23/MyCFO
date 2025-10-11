@@ -7,7 +7,6 @@ cors = CORS()
 
 # Supabase Client Wrapper
 class SupabaseClient:
-    """A wrapper for the Supabase client to allow initialization within the app factory."""
     def __init__(self):
         self.client: Client = None
 
@@ -24,7 +23,6 @@ supabase = SupabaseClient()
 
 # Plaid Client Wrapper
 class PlaidClient:
-    """A wrapper for the Plaid client to allow initialization within the app factory."""
     def __init__(self):
         self.client: plaid_api.PlaidApi = None
 

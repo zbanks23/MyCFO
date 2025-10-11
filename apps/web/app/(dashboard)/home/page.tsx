@@ -7,7 +7,6 @@ import WidgetDashboard from "@/components/WidgetDashboard";
 
 function page() {
   const { user } = useUser();
-  const [syncStatus, setSyncStatus] = useState("");
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
   useEffect(() => {
@@ -28,48 +27,12 @@ function page() {
     getApiStatus();
   }, []);
 
-  const handleSyncUser = async () => {
-    if (!user) return;
-
-    console.log("Data being sent to backend:", user);
-    setSyncStatus("Syncing...");
-    try {
-      const response = await fetch(`${apiUrl}/api/sync_user`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(user),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to sync user");
-      }
-      setSyncStatus(`Sync successful: ${data.message}`);
-    } catch (error: any) {
-      console.error("Sync failed:", error);
-      setSyncStatus(`Sync failed: ${error.message}`);
-    }
-  };
-
-  if (!user) return null;
+  const firstName = user?.firstName ?? "Guest";
 
   return (
     <section className="flex flex-col w-full h-full items-center">
       <div>
-        <p>Welcome to your dashboard, {user.firstName}!</p>
-      </div>
-      <div className="mt-8">
-        <button
-          onClick={handleSyncUser}
-          className="px-4 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600"
-        >
-          Sync My User Data to DB
-        </button>
-        <p className="mt-2 text-sm text-gray-600">
-          Status: <span className="font-medium">{syncStatus}</span>
-        </p>
+        <p>Welcome to your dashboard, {firstName}!</p>
       </div>
       <WidgetDashboard />
     </section>
