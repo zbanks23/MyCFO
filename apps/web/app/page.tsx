@@ -9,17 +9,6 @@ export default function RootPage() {
   const router = useRouter();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
 
-  useEffect(() => {
-    if (userId) {
-      router.push("/home");
-      handleSyncUser();
-    }
-  }, [userId, router]);
-
-  if (userId) {
-    return null;
-  }
-
   const handleSyncUser = async () => {
     console.log("Data being sent to backend:", userId);
     try {
@@ -44,6 +33,17 @@ export default function RootPage() {
   const handleGuestContinue = () => {
     router.push("/home");
   };
+
+  useEffect(() => {
+    if (userId) {
+      router.push("/home");
+      handleSyncUser();
+    }
+  }, [userId, router]);
+
+  if (userId) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">

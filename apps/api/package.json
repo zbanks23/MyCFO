@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "venv\\Scripts\\python.exe app.py"
+    "dev": "node start-api.js"
   },
   "keywords": [],
   "author": "",
