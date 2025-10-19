@@ -51,6 +51,7 @@ def register_extensions(app: Flask):
     )
 
     session.init_app(app)
+    session.permanent = False
 
 def register_blueprints(app: Flask):
     app.register_blueprint(core_bp, url_prefix='/api/core')
