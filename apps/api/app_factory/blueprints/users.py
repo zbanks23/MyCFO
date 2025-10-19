@@ -23,7 +23,6 @@ def sync_user():
             }
             insert_response = supabase.table('users').insert(user_to_insert).execute()
 
-            print("--- 4. Creating new user in Supabase ---")
             existing_user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute() 
             session['user_id'] = existing_user.data[0]['id'] # Set session for the new user
 
@@ -32,7 +31,6 @@ def sync_user():
             else:
                 return jsonify({"error": "Failed to create user"}), 500
         else:
-            print("--- 4. User already exists in Supabase ---")
             session['user_id'] = existing_user.data[0]['id'] # Set session for existing user
             return jsonify({"message": "User already exists", "user": existing_user.data[0]}), 200
             
@@ -42,12 +40,10 @@ def sync_user():
 @users_bp.route('/continue_as_guest', methods=['POST'])
 def continue_as_guest():
     try:
-        print("--- 3. Guest user session ---")
         session['user_id'] = str(uuid.uuid4()) # Set session for guest user
         if "user_id" not in session:
             return jsonify({"error": "Guest user creation failed"}), 400
         else:
-            print("--- 3.5. Guest user session created ---")
             return jsonify({"message": "Guest user session created"}), 200
 
     except Exception as e:

@@ -5,10 +5,10 @@ import uuid
 import redis
 
 from .extensions import cors, supabase, plaid_client, session
-from .endpoints.core import core_bp
-from .endpoints.users import users_bp
-from .endpoints.transactions import transactions_bp
-from .endpoints.plaid import plaid_bp
+from .blueprints.core import core_bp
+from .blueprints.users import users_bp
+from .blueprints.transactions import transactions_bp
+from .blueprints.plaid import plaid_bp
 
 def create_app():
     load_dotenv()
@@ -54,7 +54,6 @@ def register_extensions(app: Flask):
 
 def register_blueprints(app: Flask):
     app.register_blueprint(core_bp, url_prefix='/api/core')
-    print("--- 2. Registering core_bp blueprint ---")
     app.register_blueprint(users_bp, url_prefix='/api/users')
     app.register_blueprint(transactions_bp, url_prefix='/api/transactions')
     app.register_blueprint(plaid_bp, url_prefix='/api/plaid')
