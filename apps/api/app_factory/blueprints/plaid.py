@@ -92,7 +92,3 @@ def exchange_public_token():
         
     except plaid.ApiException as e:
         return jsonify({'error': f"Plaid API Error: {e.body}"}), 500
-    
-
-        except plaid.ApiException as e:
-            return jsonify({'error': str(e.body)}), 500
