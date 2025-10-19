@@ -1,5 +1,5 @@
 {
-  "name": "MyCFO",
+  "name": "mycfo",
   "private": true,
   "scripts": {
     "build": "turbo run build",

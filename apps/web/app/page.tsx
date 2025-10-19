@@ -1,23 +1,24 @@
 "use client";
 
-import { SignInButton, SignUpButton, SignedOut, useAuth } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, SignedOut, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 
 export default function RootPage() {
-  const { userId } = useAuth();
+  const { isLoaded, isSignedIn, user } = useUser();
   const router = useRouter();
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   const handleSyncUser = async () => {
-    console.log("Data being sent to backend:", userId);
+    console.log("Data being sent to backend");
     try {
-      const response = await fetch(`${apiUrl}/api/sync_user`, {
+      const response = await fetch(`${apiUrl}/api/users/sync_user`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(userId),
+        body: JSON.stringify(user),
+        credentials: "include",
       });
 
       const data = await response.json();
@@ -30,20 +31,37 @@ export default function RootPage() {
     }
   };
 
-  const handleGuestContinue = () => {
+  const handleGuestContinue = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/users/continue_as_guest`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+      const data = await response.json();
+      console.log(data.message);
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to continue as guest");
+      }
+    } catch (error) {
+      console.error("Error continuing as guest:", error);
+    }
     router.push("/home");
   };
 
   useEffect(() => {
-    if (userId) {
-      router.push("/home");
-      handleSyncUser();
+    if (isLoaded) {
+      if (isSignedIn) {
+        const syncAndRedirect = async () => {
+          await handleSyncUser();
+          router.push("/home");
+        };
+        syncAndRedirect();
+      }
     }
-  }, [userId, router]);
-
-  if (userId) {
-    return null;
-  }
+  }, [user]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
@@ -52,7 +70,7 @@ export default function RootPage() {
           Welcome to MyCFO
         </h1>
         <p className="text-lg text-gray-600 mb-8">
-          Your personal finance tracker. Please sign in to continue.
+          Your personal finance tracker. Please login / signup to continue, or continue as guest.
         </p>
 
         <SignedOut>

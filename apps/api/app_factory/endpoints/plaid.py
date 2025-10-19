@@ -7,11 +7,11 @@ from plaid.model.country_code import CountryCode
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 
 from ..extensions import supabase, plaid_client
-from ..services import sync_accounts, sync_transactions
+from ..services import sync_bank_accounts, sync_transactions
 
 plaid_bp = Blueprint('plaid', __name__)
 
-@plaid_bp.route('/plaid/create_link_token', methods=['POST'])
+@plaid_bp.route('/create_link_token', methods=['POST'])
 def create_link_token():
         try:
             clerk_id = request.json.get('clerk_id')
@@ -38,7 +38,7 @@ def create_link_token():
         except Exception as e:
             return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
 
-@plaid_bp.route('/plaid/exchange_public_token', methods=['POST'])
+@plaid_bp.route('/exchange_public_token', methods=['POST'])
 def exchange_public_token():
         data = request.json
         public_token = data.get('public_token')
@@ -71,7 +71,7 @@ def exchange_public_token():
             
             # Sync accounts and transactions for the new item
             print("Item stored. Syncing accounts...")
-            sync_accounts(access_token, item_db_id, user_db_id)
+            sync_bank_accounts(access_token, item_db_id, user_db_id)
 
             print("Accounts synced. Syncing transactions...")
             sync_transactions(access_token, user_db_id)

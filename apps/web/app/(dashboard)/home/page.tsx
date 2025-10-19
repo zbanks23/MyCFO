@@ -7,24 +7,32 @@ import WidgetDashboard from "@/components/WidgetDashboard";
 
 function page() {
   const { user } = useUser();
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   useEffect(() => {
-    const getApiStatus = async () => {
+    const getStatus = async () => {
       try {
-        const response = await fetch(`${apiUrl}/api/status`);
-        if (!response.ok) {
+        const statusResponse = await fetch(`${apiUrl}/api/core/status`, {credentials: "include",});
+        if (!statusResponse.ok) {
           throw new Error("Network response was not ok");
         }
-        const data = await response.json();
-        console.log(data.message);
+        const statusData = await statusResponse.json();
+        console.log(statusData.message);
+
+        const sessionResponse = await fetch(`${apiUrl}/api/core/session_test`, {credentials: "include",});
+        if (!sessionResponse.ok) {
+          // throw new Error("Network response was not ok");
+        }
+        const sessionData = await sessionResponse.json();
+        console.log(sessionData.message);
+
       } catch (error) {
         console.error("Failed to fetch API status:", error);
         console.log("Failed to connect to API");
       }
     };
 
-    getApiStatus();
+    getStatus();
   }, []);
 
   const firstName = user?.firstName ?? "Guest";

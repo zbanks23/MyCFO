@@ -2,6 +2,7 @@ from flask_cors import CORS
 from supabase import create_client, Client
 import plaid
 from plaid.api import plaid_api
+from flask_session import Session
 
 cors = CORS()
 
@@ -56,3 +57,5 @@ class PlaidClient:
         return getattr(self.client, name)
 
 plaid_client = PlaidClient()
+
+session = Session()

@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from ..extensions import supabase
 
 transactions_bp = Blueprint('transactions', __name__)
-@transactions_bp.route('/transactions', methods=['GET'])
+@transactions_bp.route('/', methods=['GET'])
 def get_transactions():
         clerk_id = request.args.get('clerk_id') # Pass clerk_id as a query param
         # Find internal user ID
@@ -16,7 +16,7 @@ def get_transactions():
         transactions = supabase.table('transactions').select('*').eq('user_id', user_db_id).order('date', desc=True).execute().data
         return jsonify(transactions)
 
-@transactions_bp.route('/transactions/note/<transaction_id>', methods=['PUT'])
+@transactions_bp.route('/note/<transaction_id>', methods=['PUT'])
 def update_transaction_note(transaction_id):
         data = request.json
         clerk_id = data.get('clerk_id') # Always verify ownership
