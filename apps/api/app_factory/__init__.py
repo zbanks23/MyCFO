@@ -30,6 +30,9 @@ def create_app():
         SESSION_USE_SIGNER = True
         SESSION_REDIS = redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379"))
 
+        SESSION_COOKIE_SAMESITE = 'None'
+        SESSION_COOKIE_SECURE = True
+
     app = Flask(__name__)
     app.config.from_object(Config)
 
