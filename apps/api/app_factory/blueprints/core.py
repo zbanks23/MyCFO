@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, session
+from flask import Blueprint, jsonify, session, request
 from ..extensions import supabase
 
 core_bp = Blueprint("core", __name__)
@@ -9,6 +9,10 @@ def status():
 
 @core_bp.route('/session_test')
 def session_test():
+    clerk_id = request.args.get('clerk_id')
+    print(clerk_id)
+    if clerk_id != "null" or clerk_id != "undefined":
+        session['user_id'] = clerk_id
     if 'user_id' in session:
         return jsonify({"message": "Session is working!"}), 200
     return jsonify({"message": "No session found."}), 404

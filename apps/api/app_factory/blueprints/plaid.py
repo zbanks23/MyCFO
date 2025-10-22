@@ -5,9 +5,11 @@ from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUse
 from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.accounts_get_request import AccountsGetRequest
+from plaid.model.transactions_sync_request import TransactionsSyncRequest
 
 from ..extensions import supabase, plaid_client
-from ..services import sync_bank_accounts, sync_transactions
+from ..services import sync_bank_account_info, sync_transactions
 
 plaid_bp = Blueprint('plaid', __name__)
 
@@ -92,3 +94,37 @@ def exchange_public_token():
         
     except plaid.ApiException as e:
         return jsonify({'error': f"Plaid API Error: {e.body}"}), 500
+    except Exception as e:
+        # This will catch any other error and return a proper JSON 500 response.
+        print(f"An unexpected error occurred in /retrieve_account_info: {str(e)}")
+        return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
+    
+@plaid_bp.route('/retrieve_account_info', methods=['GET'])
+def retrieve_account_info():
+    clerk_id = request.args.get('clerk_id')
+    print(clerk_id)
+    try:
+        accounts = []
+        # If its a guest user, retrieve account info from plaid
+        if clerk_id == "null" or clerk_id == "undefined":
+            if not session.get('plaid_access_token'):
+                return jsonify({'error': 'No Plaid access token found in session for guest user'}), 400
+            access_token = session.get('plaid_access_token')
+            accountRequest = AccountsGetRequest(access_token=access_token)
+            response = plaid_client.accounts_get(accountRequest)
+            accounts = response['accounts']
+        # If it's a registered user, retrieve account info from our DB
+        else:
+            user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+            user_db_id = user[0]['id']
+            accounts = supabase.table('accounts').select('*').eq('user_id', user_db_id).execute().data
+        return jsonify(accounts)
+    except plaid.ApiException as e:
+        return jsonify({'error': f"Plaid API Error: {e.body}"}), 500
+    except Exception as e:
+        # This will catch any other error and return a proper JSON 500 response.
+        print(f"An unexpected error occurred in /retrieve_account_info: {str(e)}")
+        return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
+

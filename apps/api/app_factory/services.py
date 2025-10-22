@@ -3,7 +3,7 @@ from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.transactions_sync_request import TransactionsSyncRequest
 from .extensions import supabase, plaid_client
 
-def sync_bank_accounts(access_token: str, item_db_id: str, user_db_id: str):
+def sync_bank_account_info(access_token: str, item_db_id: str, user_db_id: str):
         """Fetches account details from Plaid and stores them in our DB."""
         try:
             request = AccountsGetRequest(access_token=access_token)
@@ -16,8 +16,12 @@ def sync_bank_accounts(access_token: str, item_db_id: str, user_db_id: str):
                     'id': acc['account_id'], # Using Plaid's ID as our PK
                     'item_id': item_db_id,
                     'user_id': user_db_id,
-                    'name': acc['name'],
                     'mask': acc['mask'],
+                    'name': acc['name'],
+                    'official_name': acc.get('official_name', ''),
+                    'available_balance': acc['balances'].get('available'),
+                    'current_balance': acc['balances'].get('current'),
+                    'balance_limit': acc['balances'].get('limit'),
                     'type': acc['type'].value, # .value gets the string representation
                     'subtype': acc['subtype'].value
                 })

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useAuth } from "@clerk/nextjs";
 import { DndContext } from "@dnd-kit/core";
 import WidgetDashboard from "@/components/WidgetDashboard";
 
 function page() {
   const { user } = useUser();
+  const { userId } = useAuth();
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   useEffect(() => {
@@ -19,7 +20,7 @@ function page() {
         const statusData = await statusResponse.json();
         console.log(statusData.message);
 
-        const sessionResponse = await fetch(`${apiUrl}/api/core/session_test`, {credentials: "include",});
+        const sessionResponse = await fetch(`${apiUrl}/api/core/session_test?clerk_id=${userId}`, {credentials: "include",});
         if (!sessionResponse.ok) {
           // throw new Error("Network response was not ok");
         }

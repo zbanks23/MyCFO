@@ -30,6 +30,7 @@ def create_app():
         SESSION_USE_SIGNER = True
         SESSION_REDIS = redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379"))
 
+        # Necessary for session to work in cross-site contexts
         SESSION_COOKIE_SAMESITE = 'None'
         SESSION_COOKIE_SECURE = True
 
