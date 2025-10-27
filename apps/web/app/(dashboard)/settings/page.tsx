@@ -6,7 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import AccountsTable from "../../../components/settings/AccountsTable";
 
 export interface Account {
-  id: string;
+  bank_account_id: string;
   item_id: string;
   user_id: string;
   mask: string;
@@ -25,15 +25,20 @@ export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
 
   const fetchAccounts = useCallback(async () => {
-    if (!userId) return;
+    if (!isLoaded) return;
+    console.log("Fetching linked accounts for user:", userId);
     try {
-      const response = await fetch(`${apiUrl}/api/plaid/retrieve_account_info?clerk_id=${userId}`);
+      const response = await fetch(`${apiUrl}/api/plaid/retrieve_bank_account_info?clerk_id=${userId}`, {credentials: "include",});
+      if (!response.ok) {
+        throw new Error("Failed to fetch linked accounts");
+      }
       const data = await response.json();
+      console.log("Retrieved linked accounts:", data);
       setAccounts(data);
     } catch (error) {
       console.error("Error retrieving linked accounts:", error);
     }
-  }, [userId]);
+  }, [userId, isLoaded]);
   
   useEffect(() => {
     fetchAccounts();

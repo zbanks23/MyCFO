@@ -23,8 +23,12 @@ def create_app():
         PLAID_SANDBOX_SECRET = os.environ.get("PLAID_SANDBOX_SECRET")
         PLAID_ENV = os.environ.get("PLAID_ENV", "sandbox")
 
+        # Flask Configuration
+        SECRET_KEY = os.environ.get("SECRET_KEY")
+        if not SECRET_KEY:
+            raise ValueError("SECRET_KEY is not set in the environment. Run 'python -c \"import secrets; print(secrets.token_hex(32))\"' to generate one.")
+
         # Session Configuration
-        SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", str(uuid.uuid4()))
         SESSION_TYPE = "redis"
         SESSION_PERMANENT = False
         SESSION_USE_SIGNER = True

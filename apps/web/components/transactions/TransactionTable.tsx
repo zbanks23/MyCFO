@@ -13,7 +13,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
 }) => {
   const { userId } = useAuth();
   const [notes, setNotes] = useState<string>("");
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   const handleEnter = async (
     event: React.KeyboardEvent<HTMLTextAreaElement>

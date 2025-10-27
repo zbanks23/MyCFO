@@ -79,7 +79,7 @@ def exchange_public_token():
             
             # Sync accounts and transactions for the new item
             print("Item stored. Syncing bank accounts...")
-            sync_bank_accounts(access_token, item_db_id, user_db_id)
+            sync_bank_account_info(access_token, item_db_id, user_db_id)
 
             print("Accounts synced. Syncing transactions...")
             sync_transactions(access_token, user_db_id)
@@ -96,10 +96,10 @@ def exchange_public_token():
         return jsonify({'error': f"Plaid API Error: {e.body}"}), 500
     except Exception as e:
         # This will catch any other error and return a proper JSON 500 response.
-        print(f"An unexpected error occurred in /retrieve_account_info: {str(e)}")
+        print(f"An unexpected error occurred: {str(e)}")
         return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
     
-@plaid_bp.route('/retrieve_account_info', methods=['GET'])
+@plaid_bp.route('/retrieve_bank_account_info', methods=['GET'])
 def retrieve_account_info():
     clerk_id = request.args.get('clerk_id')
     print(clerk_id)
@@ -108,23 +108,55 @@ def retrieve_account_info():
         # If its a guest user, retrieve account info from plaid
         if clerk_id == "null" or clerk_id == "undefined":
             if not session.get('plaid_access_token'):
-                return jsonify({'error': 'No Plaid access token found in session for guest user'}), 400
+                print("No Plaid access token found in session for guest user.")
+                print(session)
+                return jsonify([]), 200
+            
+            print("Retrieving account info for guest user from Plaid...")
             access_token = session.get('plaid_access_token')
             accountRequest = AccountsGetRequest(access_token=access_token)
             response = plaid_client.accounts_get(accountRequest)
-            accounts = response['accounts']
+            
+            accounts = [account.to_dict() for account in response['accounts']]
+
+            # Transform data structure for EACH account
+            for account in accounts:
+                
+                # Rename 'account_id' to 'bank_account_id'
+                account['bank_account_id'] = account.pop('account_id', None)
+
+                # Pop the nested 'balances' dict and move its values to the top level
+                if account.get("balances"):
+                    balances = account.pop("balances") # Pop the whole nested dict
+                    
+                    # Create the new top-level keys
+                    account["available_balance"] = balances.get("available", None)
+                    account["current_balance"] = balances.get("current", None)
+                    account["balance_limit"] = balances.get("limit", None)
+                else:
+                    # Ensure keys exist even if 'balances' was missing
+                    account["available_balance"] = None
+                    account["current_balance"] = None
+                    account["balance_limit"] = None
+            
+            print(f"Transformed guest accounts (now flat): {accounts}")
+
         # If it's a registered user, retrieve account info from our DB
         else:
             user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
             if not user:
                 return jsonify({"error": "User not found"}), 404
             user_db_id = user[0]['id']
+            # This data is already flat because services.py flattens it
             accounts = supabase.table('accounts').select('*').eq('user_id', user_db_id).execute().data
+            
         return jsonify(accounts)
+        
     except plaid.ApiException as e:
         return jsonify({'error': f"Plaid API Error: {e.body}"}), 500
     except Exception as e:
-        # This will catch any other error and return a proper JSON 500 response.
+        import traceback
+        traceback.print_exc()
         print(f"An unexpected error occurred in /retrieve_account_info: {str(e)}")
         return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
 

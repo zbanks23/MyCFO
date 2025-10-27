@@ -23,12 +23,12 @@ const AccountsTable: React.FC<AccountsTableProps> = ({ accounts }) => {
         </thead>
         <tbody>
           {accounts.map((tx) => (
-            <tr key={tx.id} className="border-t">
+            <tr key={tx.bank_account_id} className="border-t">
                 <td className="p-4">{tx.name}</td>
                 <td className="p-4">{tx.type}</td>
                 <td className="p-4 text-right">{tx.subtype}</td>
-                <td className="p-4 text-right">{tx.available_balance !== null ? `$${tx.available_balance.toFixed(2)}` : 'N/A'}</td>
-                <td className="p-4 text-right">{tx.current_balance !== null ? `$${tx.current_balance.toFixed(2)}` : 'N/A'}</td>
+                <td className="p-4 text-right">{typeof tx.available_balance === 'number' ? `$${tx.available_balance.toFixed(2)}` : 'N/A'}</td>
+                <td className="p-4 text-right">{typeof tx.current_balance === 'number' ? `$${tx.current_balance.toFixed(2)}` : 'N/A'}</td>
                 <td className="p-4">{tx.mask}</td>
             </tr>
           ))}
