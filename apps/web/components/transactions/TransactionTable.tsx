@@ -70,14 +70,14 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
         </thead>
         <tbody>
           {transactions.map((tx) => (
-            <tr key={tx.id} className="border-t">
+            <tr key={tx.transaction_id} className="border-t">
               <td className="p-4">{new Date(tx.date).toLocaleDateString()}</td>
               <td className="p-4">{tx.name}</td>
               <td className="p-4">{tx.category}</td>
               <td className="p-4 text-right">${tx.amount.toFixed(2)}</td>
               <td className="p-4">
                 <textarea
-                  id={tx.id}
+                  id={tx.transaction_id}
                   defaultValue={tx.note ?? ""}
                   onChange={(e) => setNotes(e.target.value)}
                   onKeyDown={handleEnter}

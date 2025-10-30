@@ -7,7 +7,7 @@ import TransactionTable from "../../../components/transactions/TransactionTable"
 
 // Define a type for our transaction object for better code safety
 export interface Transaction {
-  id: string;
+  transaction_id: string;
   date: string;
   name: string;
   amount: number;
@@ -21,9 +21,8 @@ export default function TransactionsPage() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
   const fetchTransactions = useCallback(async () => {
-    if (!userId) return;
     try {
-      const response = await fetch(`${apiUrl}/api/transactions?clerk_id=${userId}`);
+      const response = await fetch(`${apiUrl}/api/plaid/retrieve_transactions?clerk_id=${userId}`, {credentials: 'include'});
       const data = await response.json();
       setTransactions(data);
     } catch (error) {
