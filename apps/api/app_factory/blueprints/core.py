@@ -11,10 +11,11 @@ def status():
 def session_test():
     clerk_id = request.args.get('clerk_id')
     print(clerk_id)
-    if clerk_id != "null" or clerk_id != "undefined":
+    if clerk_id != "null" and clerk_id != "undefined":
         session['user_id'] = clerk_id
         session['user_type'] = 'registered'
     if 'user_id' in session:
+        print(f"Session user_id: {session['user_id']}, user_type: {session.get('user_type')}")
         return jsonify({"message": "Session is working!"}), 200
     return jsonify({"message": "No session found."}), 404
 

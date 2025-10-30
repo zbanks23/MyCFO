@@ -45,6 +45,7 @@ def continue_as_guest():
         if "user_id" not in session:
             return jsonify({"error": "Guest user creation failed"}), 400
         else:
+            print(f"Guest user session created with user_id: {session['user_id']}, user_type: {session['user_type']}")
             return jsonify({"message": "Guest user session created"}), 200
 
     except Exception as e:

@@ -1,7 +1,6 @@
 import os
 from flask import Flask
 from dotenv import load_dotenv
-import uuid
 import redis
 
 from .extensions import cors, supabase, plaid_client, session
@@ -30,7 +29,8 @@ def create_app():
 
         # Session Configuration
         SESSION_TYPE = "redis"
-        SESSION_PERMANENT = False
+        SESSION_PERMANENT = True
+        SESSION_PERMANENT_LIFETIME = 259200  # 3 days in seconds
         SESSION_USE_SIGNER = True
         SESSION_REDIS = redis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379"))
 
