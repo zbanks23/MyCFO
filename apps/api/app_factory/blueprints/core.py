@@ -13,6 +13,7 @@ def session_test():
     print(clerk_id)
     if clerk_id != "null" or clerk_id != "undefined":
         session['user_id'] = clerk_id
+        session['user_type'] = 'registered'
     if 'user_id' in session:
         return jsonify({"message": "Session is working!"}), 200
     return jsonify({"message": "No session found."}), 404

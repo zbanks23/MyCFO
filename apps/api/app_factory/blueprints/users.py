@@ -41,6 +41,7 @@ def sync_user():
 def continue_as_guest():
     try:
         session['user_id'] = str(uuid.uuid4()) # Set session for guest user
+        session['user_type'] = 'guest'
         if "user_id" not in session:
             return jsonify({"error": "Guest user creation failed"}), 400
         else:
