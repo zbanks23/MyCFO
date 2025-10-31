@@ -29,7 +29,7 @@ def update_transaction_note(transaction_id):
         # Update only the note field of the transaction, ensuring it belongs to the user
         updated = supabase.table('transactions').update({
             "note": note
-        }).match({'id': transaction_id, 'user_id': user_db_id}).execute().data
+        }).match({'transaction_id': transaction_id, 'user_id': user_db_id}).execute().data
         
         if not updated:
             return jsonify({"error": "Transaction not found or unauthorized"}), 404

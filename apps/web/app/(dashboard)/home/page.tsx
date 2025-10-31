@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { DndContext } from "@dnd-kit/core";
-import WidgetDashboard from "@/components/WidgetDashboard";
+import WidgetDashboard from "@/components/home/WidgetDashboard";
 
 function page() {
   const { user } = useUser();

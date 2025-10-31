@@ -178,6 +178,8 @@ def exchange_public_token():
         exchange_response = plaid_client.client.item_public_token_exchange(exchange_request)
         access_token = exchange_response['access_token']
         item_id = exchange_response['item_id']
+        item_db_id = None
+        user_db_id = None
 
         # Registered user handling
         if clerk_id:
@@ -203,7 +205,7 @@ def exchange_public_token():
             print(session)
         
         # Sync accounts and transactions for the new item
-        print("Item stored. Syncing bank accounts...")
+        print("Plaid item stored. Syncing bank accounts...")
         sync_bank_account_info(access_token, item_db_id, user_db_id)
 
         print("Accounts synced. Syncing transactions...")
@@ -286,3 +288,43 @@ def retrieve_transactions():
 
     except plaid.ApiException as e:
         return jsonify({'error': f"Plaid API Error: {e.body}"}), 500
+    
+@plaid_bp.route('/retrieve_checking_account_balance', methods=['GET'])
+def retrieve_checking_account_balance():
+    clerk_id = request.args.get('clerk_id')
+    print(clerk_id)
+    checking_balance = 0.0
+    try:
+        # Guest user handling
+        if clerk_id == "null" or clerk_id == "undefined":
+            if not session.get('plaid_access_token'):
+                print("No Plaid access token found in session for guest user.")
+                return jsonify({'checking_account_balance': checking_balance}), 200
+            print("---Retrieving checking account balance for guest user from session---")
+            if 'bank_account_info' not in session:
+                sync_bank_account_info(session['plaid_access_token'], session['plaid_item_id'], None)
+            accounts = session['bank_account_info']
+            for account in accounts:
+                if account.get('subtype') == 'checking':
+                    checking_balance += account.get('current_balance', 0.0)
+            print(f"---Retrieved guest checking account balance from session: {checking_balance}---")
+
+        # Registered user handling
+        else:
+            print("---Retrieving checking account balance for registered user from DB---")
+            user = supabase.table('users').select('id').eq('clerk_id', clerk_id).execute().data
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+            user_db_id = user[0]['id']
+            accounts = supabase.table('accounts').select('*').eq('user_id', user_db_id).eq('subtype', 'checking').execute().data
+            for account in accounts:
+                checking_balance += account.get('current_balance', 0.0)
+            print(f"---Retrieved registered user checking account balance from DB: {checking_balance}---")
+        return jsonify({'checking_account_balance': checking_balance})
+        
+    except plaid.ApiException as e:
+        return jsonify({'error': f"Plaid API Error: {e.body}"}), 500
+    except Exception as e:
+        traceback.print_exc()
+        print(f"An unexpected error occurred in /retrieve_checking_account_balance: {str(e)}")
+        return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
