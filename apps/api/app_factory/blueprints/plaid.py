@@ -91,6 +91,7 @@ def sync_transactions(access_token: str, user_db_id: str = None):
             response = plaid_client.transactions_sync(request)
             # response['added'] is a list of Transaction objects
             transactions = response['added']
+            print(transactions)
 
             # guest user handling
             if session.get('user_type') == 'guest':
@@ -114,7 +115,7 @@ def sync_transactions(access_token: str, user_db_id: str = None):
                     'name': t.name, # Use .property
                     'amount': t.amount, # Use .property
                     # Safely access the first category
-                    'category': t.category[0] if t.category else 'Other',
+                    'category': t.personal_finance_category.primary if t.personal_finance_category.primary else 'Other',
                     'pending': t.pending, # Use .property
                     'note': ''
                 })
