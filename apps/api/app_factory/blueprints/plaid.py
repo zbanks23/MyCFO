@@ -112,7 +112,7 @@ def sync_transactions(access_token: str, user_db_id: str = None):
                     'account_id': t.account_id, # Use .property
                     'user_id': user_db_id,
                     'date': t.date.isoformat(), # Use .property
-                    'name': t.name, # Use .property
+                    'name': t.merchant_name, # Use .property
                     'amount': t.amount, # Use .property
                     # Safely access the first category
                     'category': t.personal_finance_category.primary if t.personal_finance_category.primary else 'Other',

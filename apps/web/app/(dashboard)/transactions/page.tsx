@@ -10,6 +10,7 @@ export interface Transaction {
   transaction_id: string;
   date: string;
   name: string;
+  merchant_name: string;
   amount: number;
   category: string;
   note: string | null;

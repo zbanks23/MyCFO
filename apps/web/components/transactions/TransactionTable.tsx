@@ -72,7 +72,7 @@ const TransactionTable: React.FC<TransactionTableProps> = ({
           {transactions.map((tx) => (
             <tr key={tx.transaction_id} className="border-t">
               <td className="p-4">{new Date(tx.date).toLocaleDateString()}</td>
-              <td className="p-4">{tx.name}</td>
+              <td className="p-4">{tx.merchant_name ?? tx.name}</td>
               <td className="p-4">{tx.category}</td>
               <td className="p-4 text-right">${tx.amount.toFixed(2)}</td>
               <td className="p-4">
